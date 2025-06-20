@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>用户管理系统</title>
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+.container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 900px;
+}
+h1, h2 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 25px;
+}
+.add-user-section, .user-list-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fbfbfb;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+.form-group input[type="text"],
+.form-group input[type="password"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+    margin-right: 10px;
+}
+button:hover {
+    background-color: #0056b3;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+table th, table td {
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    text-align: left;
+}
+table th {
+    background-color: #eef;
+    color: #333;
+    font-weight: bold;
+}
+table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+table tr:hover {
+    background-color: #f1f1f1;
+}
+.action-buttons button {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    margin-right: 5px;
+}
+.action-buttons .edit-button {
+    background-color: #ffc107;
+    color: #333;
+}
+.action-buttons .edit-button:hover {
+    background-color: #e0a800;
+}
+.action-buttons .delete-button {
+    background-color: #dc3545;
+}
+.action-buttons .delete-button:hover {
+    background-color: #c82333;
+}
+/* 模态框样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    justify-content: center; align-items: center;
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 30px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+.close-button {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px; right: 20px;
+    cursor: pointer;
+}
+.close-button:hover {
+    color: black;
+}
+button.cancel-edit-button {
+    background-color: #6c757d;
+}
+button.cancel-edit-button:hover {
+    background-color: #5a6268;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>用户管理系统</h1>
+
+<!-- 添加用户 -->
+<div class="add-user-section">
+<h2>添加新用户</h2>
+<form id="addUserForm">
+    <div class="form-group">
+        <label for="username">用户名:</label>
+        <input type="text" id="username" required />
+    </div>
+    <div class="form-group">
+        <label for="password">密码:</label>
+        <input type="password" id="password" required />
+    </div>
+    <button type="submit">添加用户</button>
+</form>
+</div>
+
+<!-- 用户列表 -->
+<div class="user-list-section">
+<h2>用户列表</h2>
+<table id="userTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>用户名</th>
+            <th>密码</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+<p id="noUserMessage" style="text-align:center; color:#888;">暂无用户</p>
+</div>
+
+<!-- 编辑用户模态框 -->
+<div id="editUserModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <h2>编辑用户</h2>
+    <form id="editUserForm">
+      <input type="hidden" id="editUserId" />
+      <div class="form-group">
+        <label for="editUsername">用户名:</label>
+        <input type="text" id="editUsername" required />
+      </div>
+      <div class="form-group">
+        <label for="editPassword">密码:</label>
+        <input type="password" id="editPassword" required />
+      </div>
+      <button type="submit">保存更改</button>
+      <button type="button" class="cancel-edit-button">取消</button>
+    </form>
+  </div>
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+const addUserForm = document.getElementById('addUserForm');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const userTableBody = document.querySelector('#userTable tbody');
+const noUserMessage = document.getElementById('noUserMessage');
+
+const editUserModal = document.getElementById('editUserModal');
+const closeButton = document.querySelector('.close-button');
+const cancelEditButton = document.querySelector('.cancel-edit-button');
+const editUserForm = document.getElementById('editUserForm');
+const editUserIdInput = document.getElementById('editUserId');
+const editUsernameInput = document.getElementById('editUsername');
+const editPasswordInput = document.getElementById('editPassword');
+
+let users = [];
+let nextUserId = 1;
+
+// 从localStorage加载数据
+function loadUsers() {
+    const stored = localStorage.getItem('users');
+    if (stored) {
+        users = JSON.parse(stored);
+        if (users.length > 0) {
+            const maxId = Math.max(...users.map(u => u.id));
+            nextUserId = maxId + 1;
+        }
+    }
+}
+
+// 保存到localStorage
+function saveUsers() {
+    localStorage.setItem('users', JSON.stringify(users));
+}
+
+// 渲染用户列表
+function renderUsers() {
+    userTableBody.innerHTML = '';
+    if (users.length === 0) {
+        noUserMessage.style.display = 'block';
+        document.getElementById('userTable').style.display = 'none';
+        return;
+    } else {
+        noUserMessage.style.display = 'none';
+        document.getElementById('userTable').style.display = 'table';
+    }
+
+    users.forEach(user => {
+        const row = document.createElement('tr');
+        row.dataset.id = user.id;
+
+        row.innerHTML = `
+            <td>${user.id}</td>
+            <td>${user.username}</td>
+            <td>${user.password}</td>
+            <td class="action-buttons">
+                <button class="edit-button">编辑</button>
+                <button class="delete-button">删除</button>
+            </td>`;
+        // 添加事件监听
+        row.querySelector('.edit-button').addEventListener('click', () => openEditModal(user.id));
+        row.querySelector('.delete-button').addEventListener('click', () => {
+            if (confirm('确定要删除ID为 ' + user.id + ' 的用户吗？')) {
+                users = users.filter(u => u.id !== user.id);
+                saveUsers();
+                renderUsers();
+            }
+        });
+        userTableBody.appendChild(row);
+    });
+}
+
+// 添加用户
+addUserForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+    if (!username || !password) {
+        alert('用户名和密码不能为空！');
+        return;
+    }
+    // 判断用户名是否已存在
+    if (users.some(u => u.username === username)) {
+        alert('用户名已存在！');
+        return;
+    }
+    users.push({ id: nextUserId++, username, password });
+    saveUsers();
+    renderUsers();
+    // 清空表单
+    usernameInput.value = '';
+    passwordInput.value = '';
+});
+
+// 打开编辑模态框
+function openEditModal(id) {
+    const user = users.find(u => u.id === id);
+    if (user) {
+        document.getElementById('editUserId').value = user.id;
+        document.getElementById('editUsername').value = user.username;
+        document.getElementById('editPassword').value = user.password;
+        editUserModal.style.display = 'flex';
+    }
+}
+
+// 关闭模态框
+function closeEditModal() {
+    editUserModal.style.display = 'none';
+}
+closeButton.addEventListener('click', closeEditModal);
+cancelEditButton.addEventListener('click', closeEditModal);
+window.addEventListener('click', e => {
+    if (e.target === editUserModal) closeEditModal();
+});
+
+// 保存编辑
+editUserForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const id = parseInt(document.getElementById('editUserId').value);
+    const newUsername = document.getElementById('editUsername').value.trim();
+    const newPassword = document.getElementById('editPassword').value.trim();
+    if (!newUsername || !newPassword) {
+        alert('用户名和密码不能为空！');
+        return;
+    }
+    if (users.some(u => u.username === newUsername && u.id !== id)) {
+        alert('用户名已存在！');
+        return;
+    }
+    const user = users.find(u => u.id === id);
+    if (user) {
+        user.username = newUsername;
+        user.password = newPassword;
+        saveUsers();
+        renderUsers();
+        closeEditModal();
+    }
+});
+
+// 初始化
+loadUsers();
+renderUsers();
+});
+</script>
+</body>
+</html>
